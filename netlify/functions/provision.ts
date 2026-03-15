@@ -7,15 +7,11 @@ export const handler: Handler = async (event) => {
   const { email } = JSON.parse(event.body || '{}');
 
   try {
-    // Adding more standard fields to satisfy the 400 error
+    // MINIMAL PAYLOAD: Only sending what is strictly required for provisioning
     const response = await axios.post('https://www.buyechelon.com/api/consumer/signup', {
       email: email,
-      password: "AgentPassword123!", 
       firstName: "Agent",
-      lastName: "GigAgency",
-      confirmPassword: "AgentPassword123!",
-      marketingOptIn: false,
-      zipCode: "90210" // Some Echelon endpoints require a valid ZIP
+      lastName: "Handshake"
     });
 
     return {
@@ -24,13 +20,15 @@ export const handler: Handler = async (event) => {
       body: JSON.stringify(response.data),
     };
   } catch (error: any) {
-    // This logs the SPECIFIC reason from Echelon in your Netlify logs
-    console.error("Echelon API Error:", error.response?.data);
+    // LOG THE REAL ERROR: This is the only way to know why it's failing
+    const errorDetail = error.response?.data || error.message;
+    console.error("Echelon Rejection:", errorDetail);
     
     return {
-      statusCode: error.response?.status || 500,
+      statusCode: 400,
       body: JSON.stringify({ 
-        error: error.response?.data?.message || "Check Netlify logs for API rejection reason." 
+        error: "Echelon API Error", 
+        detail: errorDetail 
       }),
     };
   }
