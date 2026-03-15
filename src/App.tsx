@@ -35,24 +35,24 @@ const App = () => {
     }
   };
 
-  const checkGateway = async () => {
-    if (!data?.api_key) return;
-    setPinging(true);
+const checkGateway = async () => {
+  setPinging(true);
+  try {
+    // We call our NEW Netlify function which has the hidden key
+    const res = await fetch('/.netlify/functions/check-status');
+    const result = await res.json();
     
-    try {
-      // Pinging the Echelon Gateway health check or root
-      const res = await fetch(`${data.gateway_url}/v1/health`, {
-        headers: { 'Authorization': `Bearer ${data.api_key}` }
-      });
-      
-      if (res.status === 200) setGatewayStatus('active');
-      else setGatewayStatus('restricted');
-    } catch (err) {
+    if (result.status === 'active') {
+      setGatewayStatus('active');
+    } else {
       setGatewayStatus('restricted');
-    } finally {
-      setPinging(false);
     }
-  };
+  } catch (err) {
+    setGatewayStatus('restricted');
+  } finally {
+    setPinging(false);
+  }
+};
 
   return (
     <div style={styles.container}>
