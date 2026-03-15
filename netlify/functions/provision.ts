@@ -7,11 +7,13 @@ export const handler: Handler = async (event) => {
   const { email } = JSON.parse(event.body || '{}');
 
   try {
-    // MINIMAL PAYLOAD: Only sending what is strictly required for provisioning
     const response = await axios.post('https://www.buyechelon.com/api/consumer/signup', {
       email: email,
+      password: "ProvisioningAgent2026!", // Stronger password
+      confirmPassword: "ProvisioningAgent2026!",
       firstName: "Agent",
-      lastName: "Handshake"
+      lastName: "Handshake",
+      zipCode: "10001"
     });
 
     return {
@@ -20,15 +22,16 @@ export const handler: Handler = async (event) => {
       body: JSON.stringify(response.data),
     };
   } catch (error: any) {
-    // LOG THE REAL ERROR: This is the only way to know why it's failing
-    const errorDetail = error.response?.data || error.message;
-    console.error("Echelon Rejection:", errorDetail);
+    // Capture the EXACT error from Echelon's response body
+    const echelonErrorMessage = error.response?.data?.message || error.response?.data?.error || "Unknown Echelon Error";
+    console.error("Echelon Rejection:", error.response?.data);
     
     return {
       statusCode: 400,
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
-        error: "Echelon API Error", 
-        detail: errorDetail 
+        error: echelonErrorMessage, // This will now show up in your UI!
+        raw: error.response?.data 
       }),
     };
   }
