@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 
-/**
- * COMPONENT: App
- * Handles the Provisioning Flow for the Echelon Agent
- */
 const App = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [pinging, setPinging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gatewayStatus, setGatewayStatus] = useState<'unknown' | 'active' | 'restricted'>('unknown');
+  
   const [data, setData] = useState<{
     tenant_id?: string;
     api_key?: string;
@@ -17,8 +16,6 @@ const App = () => {
 
   const startSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
-
     setLoading(true);
     setError(null);
 
@@ -28,13 +25,8 @@ const App = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-
       const result = await res.json();
-
-      if (!res.ok) {
-        throw new Error(result.error || 'Provisioning failed');
-      }
-
+      if (!res.ok) throw new Error(result.error || 'Provisioning failed');
       setData(result);
     } catch (err: any) {
       setError(err.message);
@@ -43,58 +35,74 @@ const App = () => {
     }
   };
 
+  const checkGateway = async () => {
+    if (!data?.api_key) return;
+    setPinging(true);
+    
+    try {
+      // Pinging the Echelon Gateway health check or root
+      const res = await fetch(`${data.gateway_url}/v1/health`, {
+        headers: { 'Authorization': `Bearer ${data.api_key}` }
+      });
+      
+      if (res.status === 200) setGatewayStatus('active');
+      else setGatewayStatus('restricted');
+    } catch (err) {
+      setGatewayStatus('restricted');
+    } finally {
+      setPinging(false);
+    }
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h1 style={styles.title}>Agent Handshake</h1>
-        <p style={styles.subtitle}>Provision your identity for <strong>The Gig Agency</strong></p>
+        <div style={styles.header}>
+          <h1 style={styles.title}>The Gig Agency</h1>
+          <div style={styles.dot}></div>
+        </div>
 
         {!data ? (
-          <form onSubmit={startSignup} style={styles.form}>
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Verification Email</label>
+          <>
+            <p style={styles.subtitle}>Provision your agent identity to begin.</p>
+            <form onSubmit={startSignup} style={styles.form}>
               <input 
                 type="email" 
-                placeholder="you@example.com" 
+                placeholder="Agent Email" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 style={styles.input}
               />
-            </div>
-            
-            {error && <div style={styles.error}>{error}</div>}
-
-            <button 
-              type="submit" 
-              disabled={loading}
-              style={{
-                ...styles.button,
-                backgroundColor: loading ? '#9ca3af' : '#2563eb'
-              }}
-            >
-              {loading ? 'Processing...' : 'Initialize Agent'}
-            </button>
-          </form>
+              {error && <div style={styles.error}>{error}</div>}
+              <button disabled={loading} style={styles.button}>
+                {loading ? 'Provisioning...' : 'Initialize Agent'}
+              </button>
+            </form>
+          </>
         ) : (
-          <div style={styles.successContainer}>
-            <div style={styles.badge}>Step 1: Provisioned</div>
-            <p>Identity created in <strong>Governance Hub</strong>.</p>
-            
-            <div style={styles.codeBlock}>
-              <div style={styles.codeItem}><strong>Tenant ID:</strong> <code>{data.tenant_id}</code></div>
-              <div style={styles.codeItem}><strong>Gateway:</strong> <code>{data.gateway_url}</code></div>
-              <div style={styles.codeItem}><strong>API Key:</strong> <code>{data.api_key?.substring(0, 12)}...</code></div>
+          <div style={styles.dashboard}>
+            <div style={styles.statusBanner}>
+              <span>Status: <strong>{gatewayStatus.toUpperCase()}</strong></span>
+              <button onClick={checkGateway} disabled={pinging} style={styles.pingBtn}>
+                {pinging ? 'Pinging...' : 'Verify Link'}
+              </button>
             </div>
 
-            <div style={styles.alert}>
-              <strong>Action Required:</strong> Check <strong>{email}</strong> for a verification link. 
-              The agent will remain restricted until the link is clicked.
+            <div style={styles.statsGrid}>
+              <div style={styles.statBox}>
+                <label style={styles.label}>Tenant ID</label>
+                <code style={styles.code}>{data.tenant_id}</code>
+              </div>
             </div>
-            
-            <button onClick={() => window.location.reload()} style={styles.secondaryButton}>
-              Start Over
-            </button>
+
+            <div style={styles.actionSection}>
+              <h3 style={styles.sectionTitle}>Campaign Control</h3>
+              <p style={styles.infoText}>Once verified, you can deploy tasks to the Governance Hub.</p>
+              <button style={styles.disabledBtn} disabled>Deploy First Campaign</button>
+            </div>
+
+            <button onClick={() => setData(null)} style={styles.resetLink}>Disconnect Agent</button>
           </div>
         )}
       </div>
@@ -102,27 +110,32 @@ const App = () => {
   );
 };
 
-// --- STYLING ---
+// --- STYLES ---
 const styles: Record<string, React.CSSProperties> = {
-  container: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#f3f4f6', padding: '20px', fontFamily: 'sans-serif' },
-  card: { backgroundColor: '#ffffff', padding: '40px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', width: '100%', maxWidth: '450px' },
-  title: { margin: '0 0 8px 0', fontSize: '24px', fontWeight: '700', color: '#111827' },
-  subtitle: { margin: '0 0 24px 0', color: '#6b7280', fontSize: '14px' },
-  form: { display: 'flex', flexDirection: 'column', gap: '16px' },
-  inputGroup: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  label: { fontSize: '12px', fontWeight: '600', color: '#374151', textTransform: 'uppercase' },
-  input: { padding: '12px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '16px' },
-  button: { padding: '12px', borderRadius: '6px', color: 'white', border: 'none', fontWeight: '600', cursor: 'pointer' },
-  error: { color: '#dc2626', fontSize: '14px', fontWeight: '500' },
-  successContainer: { display: 'flex', flexDirection: 'column', gap: '16px' },
-  badge: { display: 'inline-block', backgroundColor: '#dcfce7', color: '#166534', padding: '4px 12px', borderRadius: '99px', fontSize: '12px', fontWeight: '700' },
-  codeBlock: { backgroundColor: '#f9fafb', padding: '12px', borderRadius: '6px', fontSize: '13px', border: '1px solid #e5e7eb' },
-  codeItem: { marginBottom: '4px' },
-  alert: { backgroundColor: '#eff6ff', borderLeft: '4px solid #3b82f6', padding: '12px', fontSize: '14px', color: '#1e40af' },
-  secondaryButton: { marginTop: '10px', background: 'none', border: 'none', color: '#6b7280', textDecoration: 'underline', cursor: 'pointer', fontSize: '12px' }
+  container: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#0f172a', padding: '20px', fontFamily: 'Inter, sans-serif' },
+  card: { backgroundColor: '#ffffff', padding: '32px', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)', width: '100%', maxWidth: '480px' },
+  header: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' },
+  dot: { width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' },
+  title: { margin: 0, fontSize: '22px', color: '#1e293b' },
+  subtitle: { color: '#64748b', marginBottom: '24px' },
+  form: { display: 'flex', flexDirection: 'column', gap: '12px' },
+  input: { padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '16px' },
+  button: { padding: '12px', borderRadius: '8px', backgroundColor: '#2563eb', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer' },
+  error: { color: '#ef4444', fontSize: '14px' },
+  dashboard: { display: 'flex', flexDirection: 'column', gap: '20px' },
+  statusBanner: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' },
+  pingBtn: { padding: '6px 12px', borderRadius: '6px', border: '1px solid #2563eb', color: '#2563eb', background: 'white', cursor: 'pointer', fontSize: '12px' },
+  statsGrid: { display: 'flex', flexDirection: 'column', gap: '10px' },
+  statBox: { padding: '12px', backgroundColor: '#f1f5f9', borderRadius: '8px' },
+  label: { display: 'block', fontSize: '10px', textTransform: 'uppercase', color: '#64748b', fontWeight: 'bold' },
+  code: { fontSize: '12px', color: '#334155', wordBreak: 'break-all' },
+  actionSection: { marginTop: '10px', borderTop: '1px solid #e2e8f0', paddingTop: '20px' },
+  sectionTitle: { margin: '0 0 8px 0', fontSize: '16px' },
+  infoText: { fontSize: '13px', color: '#64748b', marginBottom: '12px' },
+  disabledBtn: { width: '100%', padding: '12px', borderRadius: '8px', backgroundColor: '#e2e8f0', color: '#94a3b8', border: 'none', cursor: 'not-allowed' },
+  resetLink: { background: 'none', border: 'none', color: '#94a3b8', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline', marginTop: '10px' }
 };
 
-// --- RENDER LOGIC ---
 const container = document.getElementById('root');
 if (container) {
   const root = createRoot(container);
