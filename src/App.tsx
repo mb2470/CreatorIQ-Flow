@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 /**
@@ -84,7 +84,7 @@ const App = () => {
             <div style={styles.codeBlock}>
               <div style={styles.codeItem}><strong>Tenant ID:</strong> <code>{data.tenant_id}</code></div>
               <div style={styles.codeItem}><strong>Gateway:</strong> <code>{data.gateway_url}</code></div>
-              <div style={styles.codeItem}><strong>API Key:</strong> <code>{data.api_key?.substring(0, 8)}...</code></div>
+              <div style={styles.codeItem}><strong>API Key:</strong> <code>{data.api_key?.substring(0, 12)}...</code></div>
             </div>
 
             <div style={styles.alert}>
@@ -102,86 +102,29 @@ const App = () => {
   );
 };
 
-// --- STYLING (In-line for simplicity) ---
-
+// --- STYLING ---
 const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: '100vh',
-    backgroundColor: '#f3f4f6',
-    padding: '20px'
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    padding: '40px',
-    borderRadius: '12px',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-    width: '100%',
-    maxWidth: '450px'
-  },
-  title: {
-    margin: '0 0 8px 0',
-    fontSize: '24px',
-    fontWeight: '700',
-    color: '#111827'
-  },
-  subtitle: {
-    margin: '0 0 24px 0',
-    color: '#6b7280',
-    fontSize: '14px'
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px'
-  },
-  inputGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px'
-  },
-  label: {
-    fontSize: '12px',
-    fontWeight: '600',
-    color: '#374151',
-    textTransform: 'uppercase'
-  },
-  input: {
-    padding: '12px',
-    borderRadius: '6px',
-    border: '1px solid #d1d5db',
-    fontSize: '16px'
-  },
-  button: {
-    padding: '12px',
-    borderRadius: '6px',
-    color: 'white',
-    border: 'none',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'background 0.2s'
-  },
-  error: {
-    color: '#dc2626',
-    fontSize: '14px',
-    fontWeight: '500'
-  },
-  successContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px'
-  },
-  badge: {
-    display: 'inline-block',
-    backgroundColor: '#dcfce7',
-    color: '#166534',
-    padding: '4px 12px',
-    borderRadius: '99px',
-    fontSize: '12px',
-    fontWeight: '700',
-    alignSelf: 'flex-start'
-  },
-  codeBlock: {
-    backgroundColor:
+  container: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#f3f4f6', padding: '20px', fontFamily: 'sans-serif' },
+  card: { backgroundColor: '#ffffff', padding: '40px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', width: '100%', maxWidth: '450px' },
+  title: { margin: '0 0 8px 0', fontSize: '24px', fontWeight: '700', color: '#111827' },
+  subtitle: { margin: '0 0 24px 0', color: '#6b7280', fontSize: '14px' },
+  form: { display: 'flex', flexDirection: 'column', gap: '16px' },
+  inputGroup: { display: 'flex', flexDirection: 'column', gap: '4px' },
+  label: { fontSize: '12px', fontWeight: '600', color: '#374151', textTransform: 'uppercase' },
+  input: { padding: '12px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '16px' },
+  button: { padding: '12px', borderRadius: '6px', color: 'white', border: 'none', fontWeight: '600', cursor: 'pointer' },
+  error: { color: '#dc2626', fontSize: '14px', fontWeight: '500' },
+  successContainer: { display: 'flex', flexDirection: 'column', gap: '16px' },
+  badge: { display: 'inline-block', backgroundColor: '#dcfce7', color: '#166534', padding: '4px 12px', borderRadius: '99px', fontSize: '12px', fontWeight: '700' },
+  codeBlock: { backgroundColor: '#f9fafb', padding: '12px', borderRadius: '6px', fontSize: '13px', border: '1px solid #e5e7eb' },
+  codeItem: { marginBottom: '4px' },
+  alert: { backgroundColor: '#eff6ff', borderLeft: '4px solid #3b82f6', padding: '12px', fontSize: '14px', color: '#1e40af' },
+  secondaryButton: { marginTop: '10px', background: 'none', border: 'none', color: '#6b7280', textDecoration: 'underline', cursor: 'pointer', fontSize: '12px' }
+};
+
+// --- RENDER LOGIC ---
+const container = document.getElementById('root');
+if (container) {
+  const root = createRoot(container);
+  root.render(<App />);
+}
